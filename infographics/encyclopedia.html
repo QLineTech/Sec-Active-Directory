@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Active Directory Encyclopedia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A thematic, single-page application with a persistent sidebar for navigation. The structure is designed for non-linear exploration, allowing users to jump directly to relevant sections. Key sections include: 1) 'Architecture' with interactive diagrams for logical/physical structures, 2) 'Services' using a card-based layout for different AD services, 3) 'Protocols' featuring a side-by-side interactive comparison of Kerberos vs. NTLM, 4) 'Administration' with clickable tables for FSMO roles and security groups, and 5) a global 'Search' feature. This structure transforms the dense report into a task-oriented tool, prioritizing usability and quick access to information over the original document's linear format. -->
+    <!-- Visualization & Content Choices: 1) AD Hierarchy (Forest/Tree/Domain): Goal=Organize, Method=Interactive nested HTML diagram, Interaction=Hover for tooltips, Justification=Visually intuitive for hierarchical data. 2) Kerberos vs. NTLM: Goal=Compare, Method=Side-by-side animated flow diagram, Interaction=Click-through steps, Justification=Dynamically illustrates complex authentication flows for better comprehension. 3) FSMO/Security Groups: Goal=Inform/Organize, Method=Interactive HTML tables, Interaction=Click row to expand details, Justification=Manages large datasets without overwhelming the user. 4) Partition Replication Scope: Goal=Compare, Method=Chart.js Bar Chart, Interaction=Hover tooltips, Justification=Quick visual comparison of replication boundaries. All interactions are built with vanilla JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .nav-link.active,
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #0d6efd;
+            transform: translateX(4px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+
+        .kerberos-flow-step,
+        .ntlm-flow-step {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0.3;
+            transform: scale(0.95);
+        }
+
+        .kerberos-flow-step.active,
+        .ntlm-flow-step.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .highlight {
+            background-color: #a5d8ff;
+            border-radius: 3px;
+        }
+
+        .ad-hierarchy-item {
+            position: relative;
+            padding-left: 20px;
+            border-left: 2px solid #dee2e6;
+        }
+
+        .ad-hierarchy-item::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 15px;
+            height: 2px;
+            background-color: #dee2e6;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .has-tooltip:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-white border-r border-gray-200 p-4 md:fixed md:h-full">
+        <h1 class="text-2xl font-bold text-blue-600 mb-6">AD Encyclopedia</h1>
+        <div class="mb-4">
+            <input type="search" id="searchInput" placeholder="Search terms..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <nav id="navigation">
+            <a href="#welcome" class="nav-link block font-medium p-3 rounded-lg mb-2 active">👋 Welcome</a>
+            <a href="#architecture" class="nav-link block font-medium p-3 rounded-lg mb-2">🏗️ Architecture</a>
+            <a href="#services" class="nav-link block font-medium p-3 rounded-lg mb-2">🛠️ Core Services</a>
+            <a href="#protocols" class="nav-link block font-medium p-3 rounded-lg mb-2">🔒 Protocols</a>
+            <a href="#administration" class="nav-link block font-medium p-3 rounded-lg mb-2">🧑‍💼 Administration</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64 p-6 md:p-10">
+        <div id="content-container">
+            <!-- Welcome Section -->
+            <section id="welcome" class="content-section active">
+                <h2 class="text-4xl font-bold mb-4">Welcome to the Interactive Active Directory Encyclopedia</h2>
+                <p class="text-lg text-gray-600 mb-6">This interactive application translates the comprehensive Active
+                    Directory report into an easily explorable format. Navigate using the sidebar to dive into AD's
+                    architecture, services, protocols, and administration. Use the search bar to instantly find and
+                    highlight key terms across the entire encyclopedia.</p>
+                <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg">
+                    <p><strong>How to use this tool:</strong> Click on a section in the left navigation to begin.
+                        Interactive elements are designed to be clicked or hovered over to reveal more information. The
+                        goal is to make learning about Active Directory's complex systems intuitive and engaging.</p>
+                </div>
+            </section>
+
+            <!-- Architecture Section -->
+            <section id="architecture" class="content-section">
+                <h2 class="text-4xl font-bold mb-4">🏗️ AD Architecture</h2>
+                <p class="text-lg text-gray-600 mb-8">Active Directory's architecture is divided into logical and
+                    physical structures. The logical structure organizes directory data, while the physical structure
+                    optimizes network traffic and authentication. This section provides an interactive overview of these
+                    core concepts. Hover over elements in the diagram to learn more.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-2xl font-bold mb-4">Logical Structure</h3>
+                        <p class="mb-6">The logical structure defines how directory objects are organized, enabling
+                            administrative delegation and policy application. It's a hierarchy that isn't tied to the
+                            physical network layout.</p>
+                        <div class="ad-hierarchy-item mt-4 has-tooltip">
+                            <span class="font-semibold">🌲 Forest</span>
+                            <div
+                                class="tooltip absolute z-10 w-64 p-2 -mt-16 text-sm leading-tight text-white transform bg-black rounded-lg shadow-lg">
+                                A collection of one or more domain trees, sharing a common schema and global catalog.
+                                It's the ultimate security boundary.</div>
+                            <div class="ad-hierarchy-item mt-4 ml-4 has-tooltip">
+                                <span class="font-semibold">🌳 Tree</span>
+                                <div
+                                    class="tooltip absolute z-10 w-64 p-2 -mt-16 text-sm leading-tight text-white transform bg-black rounded-lg shadow-lg">
+                                    A collection of one or more domains with a contiguous DNS namespace. Domains in a
+                                    tree have automatic two-way trust relationships.</div>
+                                <div class="ad-hierarchy-item mt-4 ml-4 has-tooltip">
+                                    <span class="font-semibold">🏛️ Domain</span>
+                                    <div
+                                        class="tooltip absolute z-10 w-64 p-2 -mt-16 text-sm leading-tight text-white transform bg-black rounded-lg shadow-lg">
+                                        A core administrative boundary containing users, computers, and groups. It has
+                                        its own security policies.</div>
+                                    <div class="ad-hierarchy-item mt-4 ml-4 has-tooltip">
+                                        <span class="font-semibold">📦 Organizational Unit (OU)</span>
+                                        <div
+                                            class="tooltip absolute z-10 w-64 p-2 -mt-16 text-sm leading-tight text-white transform bg-black rounded-lg shadow-lg">
+                                            A container within a domain used to group objects for delegating
+                                            administration and applying Group Policies. The smallest unit for GPO
+                                            application.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-2xl font-bold mb-4">Physical Structure</h3>
+                        <p class="mb-6">The physical structure maps to your network's topology to manage and optimize
+                            replication traffic and client authentication, especially across different geographic
+                            locations.</p>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-gray-50 rounded-lg border">
+                                <h4 class="font-semibold text-lg">🏢 Sites</h4>
+                                <p>A group of well-connected IP subnets, typically representing a physical location like
+                                    an office. Sites control replication traffic and help clients find the nearest
+                                    domain controllers.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border">
+                                <h4 class="font-semibold text-lg">🌐 Subnets</h4>
+                                <p>A range of IP addresses that define a segment of the network. Subnets are associated
+                                    with sites to direct client logon and service requests efficiently.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border">
+                                <h4 class="font-semibold text-lg">🖥️ Domain Controllers (DCs)</h4>
+                                <p>Servers that host the Active Directory database (`ntds.dit`). They handle
+                                    authentication, authorization, and policy enforcement.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border">
+                                <h4 class="font-semibold text-lg">📖 Global Catalog (GC)</h4>
+                                <p>A DC that holds a partial, read-only copy of all objects from all domains in the
+                                    forest. It enables fast, forest-wide searches.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md mt-8">
+                    <h3 class="text-2xl font-bold mb-4">AD Data Partitions & Replication</h3>
+                    <p class="mb-6">The Active Directory database is divided into partitions (or Naming Contexts) to
+                        manage replication efficiently. The chart below shows the different partitions and their
+                        replication scope, illustrating how AD balances consistency with network performance.</p>
+                    <div class="chart-container">
+                        <canvas id="partitionsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services Section -->
+            <section id="services" class="content-section">
+                <h2 class="text-4xl font-bold mb-4">🛠️ Core Services</h2>
+                <p class="text-lg text-gray-600 mb-8">Active Directory is more than just a directory; it's a suite of
+                    services that provide comprehensive identity and access management. Each service plays a distinct
+                    role in securing and managing enterprise resources. Explore the cards below to understand the
+                    purpose of each core AD service.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                        <h3 class="text-xl font-bold mb-2">Domain Services (AD DS)</h3>
+                        <p class="text-gray-600">The foundation. Stores directory data and manages communication between
+                            users and domains, including logon processes, authentication, and directory searches.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-green-500">
+                        <h3 class="text-xl font-bold mb-2">Certificate Services (AD CS)</h3>
+                        <p class="text-gray-600">Creates and manages digital certificates for a Public Key
+                            Infrastructure (PKI). Used for encrypting files, emails, and network traffic.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-500">
+                        <h3 class="text-xl font-bold mb-2">Federation Services (AD FS)</h3>
+                        <p class="text-gray-600">Provides Single Sign-On (SSO) to access systems and applications
+                            located outside the corporate network (e.g., cloud services or partner applications).</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-red-500">
+                        <h3 class="text-xl font-bold mb-2">Rights Management (AD RMS)</h3>
+                        <p class="text-gray-600">An information protection technology that uses encryption and usage
+                            policies to safeguard digital information from unauthorized use, online or offline.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-yellow-500">
+                        <h3 class="text-xl font-bold mb-2">Lightweight Directory (AD LDS)</h3>
+                        <p class="text-gray-600">A standalone LDAP directory service for applications that need a
+                            directory but not a full AD domain. It's flexible and doesn't require domain controllers.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Protocols Section -->
+            <section id="protocols" class="content-section">
+                <h2 class="text-4xl font-bold mb-4">🔒 Protocols in Action</h2>
+                <p class="text-lg text-gray-600 mb-8">Active Directory relies on a set of core protocols for everything
+                    from authentication to file sharing. Understanding these protocols is key to troubleshooting and
+                    securing AD. This section provides an interactive comparison of the two primary authentication
+                    protocols: Kerberos and the legacy NTLM.</p>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-bold mb-4">Kerberos vs. NTLM Authentication Flow</h3>
+                    <p class="mb-6">Use the buttons below to step through the authentication process for both Kerberos
+                        (the modern, secure standard) and NTLM (the legacy, less secure protocol). Notice the
+                        differences in complexity, security, and the number of actors involved. Kerberos uses a trusted
+                        third party (the KDC) and tickets, while NTLM uses a challenge-response mechanism.</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="text-xl font-semibold text-center mb-4">Kerberos Flow 🎟️</h4>
+                            <div id="kerberos-flow" class="space-y-4">
+                                <div class="kerberos-flow-step p-4 border rounded-lg bg-gray-50"><strong>1.
+                                        AS-REQ:</strong> Client requests a Ticket-Granting Ticket (TGT) from the
+                                    Authentication Server (AS).</div>
+                                <div class="kerberos-flow-step p-4 border rounded-lg bg-gray-50"><strong>2.
+                                        AS-REP:</strong> AS validates the user and sends back an encrypted TGT.</div>
+                                <div class="kerberos-flow-step p-4 border rounded-lg bg-gray-50"><strong>3.
+                                        TGS-REQ:</strong> Client uses the TGT to request a Service Ticket (ST) from the
+                                    Ticket-Granting Server (TGS).</div>
+                                <div class="kerberos-flow-step p-4 border rounded-lg bg-gray-50"><strong>4.
+                                        TGS-REP:</strong> TGS validates the TGT and issues an encrypted ST for the
+                                    specific service.</div>
+                                <div class="kerberos-flow-step p-4 border rounded-lg bg-gray-50"><strong>5.
+                                        AP-REQ:</strong> Client presents the ST to the application server to get access.
+                                    Mutual authentication occurs.</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-semibold text-center mb-4">NTLM Flow 챌</h4>
+                            <div id="ntlm-flow" class="space-y-4">
+                                <div class="ntlm-flow-step p-4 border rounded-lg bg-gray-50"><strong>1.
+                                        NEGOTIATE:</strong> Client sends a negotiation message to the server.</div>
+                                <div class="ntlm-flow-step p-4 border rounded-lg bg-gray-50"><strong>2.
+                                        CHALLENGE:</strong> Server responds with a random challenge string.</div>
+                                <div class="ntlm-flow-step p-4 border rounded-lg bg-gray-50"><strong>3.
+                                        AUTHENTICATE:</strong> Client encrypts the challenge with the user's password
+                                    hash and sends it back. Server validates the response with the Domain Controller.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="prev-step"
+                            class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold mr-2 disabled:opacity-50"
+                            disabled>Previous</button>
+                        <button id="next-step" class="px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold">Next
+                            Step</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Administration Section -->
+            <section id="administration" class="content-section">
+                <h2 class="text-4xl font-bold mb-4">🧑‍💼 Administration Roles & Groups</h2>
+                <p class="text-lg text-gray-600 mb-8">Effective AD administration requires understanding its specialized
+                    roles and security groups. FSMO roles handle critical, single-master operations to prevent
+                    conflicts, while built-in security groups simplify permission management. Click on any row in the
+                    tables below to see detailed information.</p>
+
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h3 class="text-2xl font-bold mb-4">Flexible Single Master Operations (FSMO) Roles</h3>
+                    <p class="mb-4">These five unique roles are essential for AD health. Some are forest-wide, others
+                        are domain-wide.</p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Role</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Scope</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fsmo-table" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-bold mb-4">Key Built-in Security Groups</h3>
+                    <p class="mb-4">These groups have pre-defined permissions for administrative tasks. Managing their
+                        membership is a critical security function.</p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Group</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Primary Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groups-table" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navigation = document.getElementById('navigation');
+            const contentContainer = document.getElementById('content-container');
+            const navLinks = navigation.querySelectorAll('.nav-link');
+            const sections = contentContainer.querySelectorAll('.content-section');
+
+            const data = {
+                partitions: {
+                    labels: ['Schema', 'Configuration', 'Domain', 'Application'],
+                    datasets: [{
+                        label: 'Replication Scope',
+                        data: [3, 3, 2, 1],
+                        backgroundColor: ['#3b82f6', '#10b981', '#8b5cf6', '#ef4444'],
+                        borderColor: ['#1d4ed8', '#047857', '#6d28d9', '#b91c1c'],
+                        borderWidth: 1
+                    }]
+                },
+                fsmoRoles: [
+                    { name: 'Schema Master', scope: 'Forest-wide', description: 'Governs all changes to the AD schema. Only one per forest.' },
+                    { name: 'Domain Naming Master', scope: 'Forest-wide', description: 'Manages the addition and removal of domains in the forest. Only one per forest.' },
+                    { name: 'PDC Emulator', scope: 'Domain-wide', description: 'Acts as the authoritative time source, processes password changes preferentially, and manages account lockouts. One per domain.' },
+                    { name: 'RID Master', scope: 'Domain-wide', description: 'Allocates pools of Relative IDs (RIDs) to domain controllers to ensure unique Security Identifiers (SIDs) for objects. One per domain.' },
+                    { name: 'Infrastructure Master', scope: 'Domain-wide', description: 'Responsible for updating object references (e.g., group memberships) across domains. One per domain.' }
+                ],
+                securityGroups: [
+                    { name: 'Enterprise Admins', role: 'Forest-wide administration', description: 'Members have full control over all domains in the forest. Highest level of privilege.' },
+                    { name: 'Domain Admins', role: 'Domain-wide administration', description: 'Members have full control over a specific domain.' },
+                    { name: 'Schema Admins', role: 'Schema modification', description: 'Members can modify the Active Directory schema, which affects the entire forest.' },
+                    { name: 'Administrators', role: 'Full server control', description: 'Members have complete and unrestricted access to the computer/server.' },
+                    { name: 'Server Operators', role: 'Administer domain controllers', description: 'Can perform maintenance on DCs, like backups and service management, but cannot change user permissions.' },
+                    { name: 'Account Operators', role: 'Manage user accounts', description: 'Can create, modify, and delete most user and group accounts, but not administrative ones.' },
+                    { name: 'Protected Users', role: 'Enhanced credential security', description: 'Provides additional protections against credential theft. Members cannot use weaker protocols like NTLM.' }
+                ]
+            };
+
+            function navigateTo(hash) {
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === hash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+
+                sections.forEach(section => {
+                    if ('#' + section.id === hash) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+
+                if (hash === '#architecture' && !document.getElementById('partitionsChart').chart) {
+                    renderPartitionsChart();
+                }
+            }
+
+            navigation.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A') {
+                    e.preventDefault();
+                    const hash = e.target.getAttribute('href');
+                    window.location.hash = hash;
+                }
+            });
+
+            window.addEventListener('hashchange', () => {
+                const hash = window.location.hash || '#welcome';
+                navigateTo(hash);
+            });
+
+            function renderPartitionsChart() {
+                const ctx = document.getElementById('partitionsChart').getContext('2d');
+                if (ctx.canvas.chart) {
+                    ctx.canvas.chart.destroy();
+                }
+                ctx.canvas.chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: data.partitions,
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const scopeMap = { 1: 'Custom (e.g., specific DCs)', 2: 'Domain-wide', 3: 'Forest-wide' };
+                                        return `Scope: ${scopeMap[context.raw]}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    display: false
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const fsmoTableBody = document.getElementById('fsmo-table');
+            data.fsmoRoles.forEach(role => {
+                const row = document.createElement('tr');
+                row.className = 'cursor-pointer hover:bg-gray-50';
+                row.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${role.name}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${role.scope}</td>`;
+                fsmoTableBody.appendChild(row);
+
+                const detailRow = document.createElement('tr');
+                detailRow.style.display = 'none';
+                detailRow.innerHTML = `<td colspan="2" class="px-6 py-4 text-sm text-gray-700 bg-blue-50">${role.description}</td>`;
+                fsmoTableBody.appendChild(detailRow);
+
+                row.addEventListener('click', () => {
+                    detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
+                });
+            });
+
+            const groupsTableBody = document.getElementById('groups-table');
+            data.securityGroups.forEach(group => {
+                const row = document.createElement('tr');
+                row.className = 'cursor-pointer hover:bg-gray-50';
+                row.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${group.name}</td><td class="px-6 py-4 text-sm text-gray-500">${group.role}</td>`;
+                groupsTableBody.appendChild(row);
+
+                const detailRow = document.createElement('tr');
+                detailRow.style.display = 'none';
+                detailRow.innerHTML = `<td colspan="2" class="px-6 py-4 text-sm text-gray-700 bg-green-50">${group.description}</td>`;
+                groupsTableBody.appendChild(detailRow);
+
+                row.addEventListener('click', () => {
+                    detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
+                });
+            });
+
+            const kerberosSteps = document.querySelectorAll('.kerberos-flow-step');
+            const ntlmSteps = document.querySelectorAll('.ntlm-flow-step');
+            const nextBtn = document.getElementById('next-step');
+            const prevBtn = document.getElementById('prev-step');
+            let currentStep = -1;
+            const maxSteps = Math.max(kerberosSteps.length, ntlmSteps.length);
+
+            function updateFlowSteps() {
+                kerberosSteps.forEach((step, index) => {
+                    step.classList.toggle('active', index === currentStep);
+                });
+                ntlmSteps.forEach((step, index) => {
+                    step.classList.toggle('active', index === currentStep);
+                });
+                prevBtn.disabled = currentStep <= 0;
+                nextBtn.disabled = currentStep >= maxSteps - 1;
+            }
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < maxSteps - 1) {
+                    currentStep++;
+                    updateFlowSteps();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateFlowSteps();
+                }
+            });
+
+            updateFlowSteps();
+
+            const searchInput = document.getElementById('searchInput');
+            let originalContent = contentContainer.innerHTML;
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim().toLowerCase();
+
+                contentContainer.innerHTML = originalContent;
+
+                if (query.length < 3) {
+                    return;
+                }
+
+                const regex = new RegExp(query, 'gi');
+                sections.forEach(section => {
+                    const textNodes = [];
+                    function getTextNodes(element) {
+                        element.childNodes.forEach(node => {
+                            if (node.nodeType === 3 && node.nodeValue.trim() !== '') {
+                                textNodes.push(node);
+                            } else if (node.nodeType === 1 && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+                                getTextNodes(node);
+                            }
+                        });
+                    }
+                    getTextNodes(section);
+
+                    textNodes.forEach(node => {
+                        const text = node.nodeValue;
+                        if (text.toLowerCase().includes(query)) {
+                            const newHTML = text.replace(regex, `<span class="highlight">$&</span>`);
+                            const span = document.createElement('span');
+                            span.innerHTML = newHTML;
+                            node.parentNode.replaceChild(span, node);
+                        }
+                    });
+                });
+
+                originalContent = contentContainer.innerHTML;
+            });
+
+            const initialHash = window.location.hash || '#welcome';
+            navigateTo(initialHash);
+        });
+    </script>
+</body>
+
+</html>

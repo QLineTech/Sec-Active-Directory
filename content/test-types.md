@@ -2,6 +2,8 @@
 
 Active Directory (AD) is the backbone of many enterprise networks, orchestrating user authentication, authorization, and access control. Penetration testing in AD environments is vital to unearth vulnerabilities that attackers could exploit. In this presentation, we’ll dive into the three core testing methodologies—**Whitebox**, **Blackbox**, and **Greybox**—and explore how they bolster AD security. Each method provides unique perspectives on potential weaknesses, making it critical to grasp their differences for effective security assessments.
 
+![Active Directory Test Types](../assets/test-types.png)
+
 ---
 
 ## 🔍 Whitebox Testing: Full Visibility
@@ -107,13 +109,4 @@ flowchart TD
     B --> |Insider Risk| E[Greybox Testing]
 ```
 
----
-
-## 🎯 Conclusion
-
-Mastering **Whitebox**, **Blackbox**, and **Greybox** testing methodologies is essential for securing Active Directory environments. Each offers unique strengths:
-- **Whitebox** provides comprehensive insights for internal reviews.
-- **Blackbox** delivers realistic simulations of external attacks.
-- **Greybox** balances the two, focusing on insider threats and partial access risks.
-
-By strategically applying these approaches, organizations can pinpoint and mitigate vulnerabilities, ensuring a fortified AD security posture. Let’s protect what matters most! 🚀
+![Active Directory Test Types](../assets/test-types-2.png)

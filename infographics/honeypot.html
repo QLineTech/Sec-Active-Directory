@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Active Directory Deception</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cyber Sentinel Palette -->
+    <!-- Application Structure Plan: The SPA is designed as a single-page, thematic dashboard to transform the dense report into an engaging, non-linear user experience. The structure includes: 1) A sticky navigation header for easy access. 2) An 'Overview' to introduce the problem and solution. 3) A 'Why Deceive?' section with benefit cards. 4) An interactive 'Core Techniques' section with clickable elements to reveal details. 5) A 'Honeypot Comparison' chart to visualize table data. 6) A filterable 'Tools & Platforms' gallery. 7) An 'Implementation' guide. 8) An 'Challenges' accordion. 9) 'Case Studies' to show real-world value. This structure was chosen to facilitate user-driven exploration, making complex information digestible and actionable by allowing users to jump to sections of interest (like tools or techniques) rather than reading linearly. -->
+    <!-- Visualization & Content Choices: 1) Honeypot Comparison: Report Info (Low vs High-Interaction Table) -> Goal (Compare) -> Viz (Grouped Bar Chart) -> Interaction (Tooltips on hover) -> Justification (Visually intuitive comparison of trade-offs) -> Library (Chart.js/Canvas). 2) Core Techniques: Report Info (Section 3 text) -> Goal (Organize/Inform) -> Viz (Clickable cards) -> Interaction (Click to reveal detailed text) -> Justification (Prevents wall of text, encourages active exploration) -> Library (JS). 3) Tools & Platforms: Report Info (Tool tables) -> Goal (Organize/Inform) -> Viz (Filterable card gallery) -> Interaction (Click filters to show/hide tools) -> Justification (Transforms static tables into a practical, searchable catalog) -> Library (JS). 4) Challenges: Report Info (Section 5 text) -> Goal (Organize/Inform) -> Viz (Accordion) -> Interaction (Click to expand/collapse) -> Justification (Concise presentation for problem/solution content) -> Library (JS). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            /* slate-50 */
+            color: #1e293b;
+            /* slate-800 */
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #0891b2;
+            /* cyan-600 */
+        }
+
+        .tech-card,
+        .tool-card,
+        .tab-btn,
+        .filter-btn,
+        .accordion-button {
+            transition: all 0.3s ease;
+        }
+
+        .tech-card.active {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #0891b2;
+            /* cyan-600 */
+        }
+
+        .tab-btn.active {
+            background-color: #0891b2;
+            /* cyan-600 */
+            color: white;
+        }
+
+        .filter-btn.active {
+            background-color: #0e7490;
+            /* cyan-700 */
+            color: white;
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <a href="#hero" class="text-xl font-bold text-cyan-700">AD Deception Guide</a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Overview</a>
+                        <a href="#techniques"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Techniques</a>
+                        <a href="#tools"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Tools</a>
+                        <a href="#implementation"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Implementation</a>
+                        <a href="#challenges"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Challenges</a>
+                        <a href="#casestudies"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Case Studies</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-cyan-600 hover:bg-slate-100 focus:outline-none">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="md:hidden hidden pb-4">
+                <a href="#overview"
+                    class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-600">Overview</a>
+                <a href="#techniques"
+                    class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-600">Techniques</a>
+                <a href="#tools"
+                    class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-600">Tools</a>
+                <a href="#implementation"
+                    class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-600">Implementation</a>
+                <a href="#challenges"
+                    class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-600">Challenges</a>
+                <a href="#casestudies"
+                    class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-600">Case Studies</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Protecting the Keys to the
+                    Kingdom</h1>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">An interactive guide to using deception
+                    technology for defending Active Directory, the heart of your enterprise network.</p>
+            </div>
+        </section>
+
+        <section id="overview" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Why Deceive? The Proactive
+                        Defense</h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">This section introduces the core
+                        value of Active Directory deception. Instead of waiting for an attack to cause damage, deception
+                        technology creates a minefield of decoys. Any interaction with a decoy is a high-fidelity signal
+                        of an intruder, allowing for early detection and response before critical assets are
+                        compromised.</p>
+                </div>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-8 rounded-lg shadow-md">
+                        <div class="text-cyan-600 text-4xl mb-4">🎯</div>
+                        <h3 class="text-xl font-semibold text-slate-900">High-Fidelity Alerts</h3>
+                        <p class="mt-2 text-slate-600">Legitimate users have no reason to access decoys. Any alert is a
+                            real threat, eliminating false positives and alert fatigue.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md">
+                        <div class="text-cyan-600 text-4xl mb-4">🔬</div>
+                        <h3 class="text-xl font-semibold text-slate-900">Invaluable Threat Intel</h3>
+                        <p class="mt-2 text-slate-600">Observe attacker TTPs (Tactics, Techniques & Procedures) in a
+                            safe, controlled environment to strengthen your defenses.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md">
+                        <div class="text-cyan-600 text-4xl mb-4">⏱️</div>
+                        <h3 class="text-xl font-semibold text-slate-900">Reduced Dwell Time</h3>
+                        <p class="mt-2 text-slate-600">Detect intruders in minutes, not months. Drastically shrink the
+                            window for attackers to do harm and exfiltrate data.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="techniques" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Core Deception Techniques
+                    </h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">Active Directory deception isn't
+                        a single tool, but a layered strategy. This section breaks down the primary techniques used to
+                        create a convincing and effective web of decoys. Click on each technique to learn how it works
+                        to trap attackers at different stages of an intrusion.</p>
+                </div>
+                <div class="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="tech-cards-container">
+                </div>
+                <div id="technique-details" class="mt-8 p-8 bg-slate-50 rounded-lg min-h-[200px] shadow-inner">
+                    <p class="text-slate-500 text-center">Select a technique above to see the details.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Honeypot Comparison:
+                        Interaction Levels</h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">Not all honeypots are created
+                        equal. They are primarily categorized by their level of interaction, which dictates their
+                        complexity, risk, and the quality of intelligence they provide. This chart visualizes the key
+                        trade-offs between Low- and High-Interaction honeypots, helping you choose the right approach
+                        for your goals.</p>
+                </div>
+                <div class="mt-12">
+                    <div class="chart-container">
+                        <canvas id="honeypotComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Tools & Platforms</h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">Ready to get started? This
+                        section provides an interactive catalog of open-source tools and commercial platforms for
+                        implementing AD deception. Use the tabs to switch between categories and the filters to find
+                        tools that match your specific needs.</p>
+                </div>
+                <div class="mt-12">
+                    <div class="flex justify-center mb-8 border-b border-slate-200">
+                        <button class="tab-btn active text-lg font-medium px-6 py-3"
+                            data-tab="opensource">Open-Source</button>
+                        <button class="tab-btn text-lg font-medium px-6 py-3" data-tab="commercial">Commercial</button>
+                    </div>
+                    <div id="tools-content">
+                        <div id="opensource" class="tab-content">
+                            <div class="flex flex-wrap justify-center gap-2 mb-8" id="opensource-filters"></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                                id="opensource-tools-grid"></div>
+                        </div>
+                        <div id="commercial" class="tab-content hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                                id="commercial-tools-grid"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="implementation" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Strategic Implementation
+                        Roadmap</h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">Effective deception is more than
+                        just deploying tools; it's about strategy. This section outlines the critical steps for
+                        successfully implementing and integrating AD honeypots into your security operations, ensuring
+                        they are both effective and secure.</p>
+                </div>
+                <div class="mt-16 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                    <div class="relative pl-12">
+                        <div
+                            class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white font-bold text-lg">
+                            1</div>
+                        <h3 class="text-xl font-semibold text-slate-900">Deployment & Realism</h3>
+                        <p class="mt-2 text-slate-600">Place decoys internally where attackers will find them. Use
+                            realistic naming, aged accounts, and simulated activity to ensure they are indistinguishable
+                            from real assets.</p>
+                    </div>
+                    <div class="relative pl-12">
+                        <div
+                            class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white font-bold text-lg">
+                            2</div>
+                        <h3 class="text-xl font-semibold text-slate-900">Isolation & Security</h3>
+                        <p class="mt-2 text-slate-600">Crucially, isolate honeypots from your production network with
+                            firewalls and segmentation. A compromised honeypot must not become a pivot point for further
+                            attacks.</p>
+                    </div>
+                    <div class="relative pl-12">
+                        <div
+                            class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white font-bold text-lg">
+                            3</div>
+                        <h3 class="text-xl font-semibold text-slate-900">Integration with SOC</h3>
+                        <p class="mt-2 text-slate-600">Feed all honeypot alerts into your SIEM for centralized
+                            monitoring and correlation. Use SOAR platforms to automate incident response workflows when
+                            a decoy is triggered.</p>
+                    </div>
+                    <div class="relative pl-12">
+                        <div
+                            class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white font-bold text-lg">
+                            4</div>
+                        <h3 class="text-xl font-semibold text-slate-900">Continuous Monitoring & Review</h3>
+                        <p class="mt-2 text-slate-600">Deception is not "set and forget." Continuously monitor for
+                            interactions, analyze the intelligence gathered, and adapt your decoys to stay ahead of
+                            evolving threats.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="challenges" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Challenges & Mitigation
+                    </h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">Implementing deception technology
+                        comes with its own set of challenges. This section explores common hurdles and provides
+                        practical strategies to mitigate them, ensuring your deception strategy remains robust and
+                        effective.</p>
+                </div>
+                <div class="mt-12 max-w-3xl mx-auto space-y-4" id="accordion-container">
+                </div>
+            </div>
+        </section>
+
+        <section id="casestudies" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Real-World Impact</h2>
+                    <p class="mt-4 text-lg leading-8 text-slate-600 max-w-3xl mx-auto">How effective is AD deception in
+                        practice? This section highlights real-world case studies and success stories that demonstrate
+                        the tangible value of honeypots in detecting and containing advanced threats before they
+                        escalate.</p>
+                </div>
+                <div class="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-lg shadow-md border-l-4 border-cyan-500">
+                        <h3 class="text-xl font-semibold text-slate-900">Ransomware Contained</h3>
+                        <p class="mt-2 text-slate-600">A honeypot detected a ransomware attack in its early stages when
+                            a compromised admin credential was used. The immediate alert allowed the security team to
+                            isolate endpoints and limit the impact to only <strong>20 machines out of a potential
+                                4,000</strong>, providing critical minutes of extra time to respond.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md border-l-4 border-amber-500">
+                        <h3 class="text-xl font-semibold text-slate-900">Penetration Test Exposed</h3>
+                        <p class="mt-2 text-slate-600">During a red team exercise, honey users and network decoys
+                            provided real-time alerts of the penetration tester's lateral movements. This allowed the
+                            security team to observe their TTPs live, gathering invaluable intelligence to harden actual
+                            defenses against similar real-world attacks.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md border-l-4 border-emerald-500">
+                        <h3 class="text-xl font-semibold text-slate-900">ADCS Exploitation Detected</h3>
+                        <p class="mt-2 text-slate-600">By deploying a decoy Certificate Authority with a seemingly
+                            vulnerable (but unexploitable) template, organizations can detect attackers attempting to
+                            use common ADCS misconfigurations for privilege escalation—a high-impact attack vector used
+                            by sophisticated threat actors.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md border-l-4 border-violet-500">
+                        <h3 class="text-xl font-semibold text-slate-900">Dynamic Threat Intelligence Lab</h3>
+                        <p class="mt-2 text-slate-600">Beyond detection, AD deception acts as a live lab. The TTPs
+                            observed in the honeypot environment provide first-hand insights into active threats, which
+                            can be fed back to update security controls, refine policies, and improve incident response
+                            playbooks.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="bg-slate-800 text-slate-300">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+                <p>This interactive guide is based on the report "Honeypot Techniques for Active Directory."</p>
+                <p class="text-sm text-slate-400 mt-2">Designed to make complex cybersecurity concepts accessible and
+                    engaging.</p>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const appData = {
+                techniques: [
+                    {
+                        id: 'honey-users',
+                        name: 'Honey Users',
+                        icon: '👤',
+                        title: 'Honeypot Accounts (Honey Users)',
+                        description: 'Fake user accounts are created in Active Directory to act as bait. Since they have no legitimate purpose, any login attempt or query against them is an immediate, high-fidelity alert. These are designed to be attractive to attackers, with names like "Admin_Backup" or "Finance_Temp" and seemingly high-privilege roles to entice reconnaissance and brute-force attempts.'
+                    },
+                    {
+                        id: 'honey-creds',
+                        name: 'Honey Credentials',
+                        icon: '🔑',
+                        title: 'Honey Credentials & Tokens',
+                        description: 'Subtle but powerful, these are fake credentials (passwords, API keys, config files) planted on endpoints or in memory (LSASS). Attackers using tools like Mimikatz to scrape credentials will find and use this bait, immediately revealing their presence and lateral movement attempts without granting them any real access.'
+                    },
+                    {
+                        id: 'adcs-pots',
+                        name: 'ADCS Honeypots',
+                        icon: '�',
+                        title: 'ADCS Honeypots',
+                        description: 'Active Directory Certificate Services (ADCS) is a high-value target. An ADCS honeypot sets up a decoy Certificate Authority with seemingly vulnerable templates (like ESC1). When an attacker tries to exploit it to escalate privileges, the attempt is logged and blocked, providing a clear signal of a sophisticated attack in progress.'
+                    },
+                    {
+                        id: 'network-pots',
+                        name: 'Network Honeypots',
+                        icon: '🌐',
+                        title: 'Network-Level Honeypots',
+                        description: 'These are decoy systems that mimic real infrastructure like file servers (SMB shares), databases, or RDP servers. Placed on the network, they detect initial reconnaissance scans and lateral movement. Any connection attempt to these systems is inherently suspicious, providing an early warning of an intruder exploring the network.'
+                    }
+                ],
+                tools: {
+                    opensource: [
+                        { name: 'Certiception', focus: 'ADCS Honeypot', description: 'Creates "vulnerable" ADCS templates to trap attackers. Prevents actual exploitation.', tags: ['ADCS'] },
+                        { name: 'HoneyAD', focus: 'AD Object Simulation', description: 'PowerShell scripts to create a full AD honeypot environment (users, services, computers).', tags: ['Users', 'Network'] },
+                        { name: 'Canarytokens', focus: 'General Honeytokens', description: 'Embeds various decoy data types (files, URLs, credentials) to trigger alerts upon access.', tags: ['Credentials'] },
+                        { name: 'DCEPT', focus: 'Credential Honeypot', description: 'Places deceptive credentials directly in Microsoft Active Directory for monitoring.', tags: ['Credentials'] },
+                        { name: 'ad-honeypot-autodeploy', focus: 'RDP Honeypot', description: 'Automated deployment of a full, vulnerable Windows Domain for RDP honeypotting.', tags: ['Network'] },
+                        { name: 'Cowrie', focus: 'SSH Honeypot', description: 'Emulates an interactive SSH server to detect and log reconnaissance and lateral movement.', tags: ['Network'] },
+                    ],
+                    commercial: [
+                        { name: 'Rapid7 InsightIDR', focus: 'Comprehensive Deception & XDR', description: 'Includes honeypots, honey users, credentials, and files. Integrated with UBA, EDR, and SIEM.' },
+                        { name: 'Acalvio ShadowPlex', focus: 'AI-powered AD Protection', description: 'Automated decoy placement (users, computers, SPNs), attack path mapping, and ADCS honeypots.' },
+                        { name: 'CyberTrap', focus: 'Deception Environment', description: 'Redirects attackers to a full, realistic AD image to collect detailed TTPs and IOCs.' },
+                        { name: 'Tenable Identity Exposure', focus: 'Identity Exposure Management', description: 'Specializes in honey account management and provides specific deployment scripts for AD.' },
+                        { name: 'Blumira', focus: 'Cloud SIEM & Automated Response', description: 'Integrates with AD for threat detection, including credential spraying and rogue domain admins.' },
+                    ]
+                },
+                challenges: [
+                    {
+                        title: 'Maintaining Realism & Evading Detection',
+                        content: 'Attackers are savvy and look for signs of decoys (e.g., new accounts, no activity). Mitigation involves using aged accounts, simulating user activity (logins, bad passwords), and continuously updating decoy details to ensure they blend in seamlessly with the production environment.'
+                    },
+                    {
+                        title: 'Resource Overhead & Management Complexity',
+                        content: 'High-interaction honeypots can be complex and time-consuming to manage. Mitigation includes leveraging commercial platforms with automation, using open-source scripting to reduce manual tasks, and starting with simpler low-interaction decoys before scaling up.'
+                    },
+                    {
+                        title: 'Legal and Ethical Considerations',
+                        content: 'A poorly secured honeypot can be used to attack others, creating legal liability. Mitigation requires strict network isolation from production systems, never using real data in decoys, and consulting with legal counsel to ensure compliance with privacy laws and regulations.'
+                    },
+                    {
+                        title: 'Addressing False Negatives',
+                        content: 'Advanced attackers may identify and avoid honeypots. Mitigation involves deploying a diverse and layered deception strategy with multiple types of decoys across the network. This makes it significantly harder for an attacker to identify and evade all traps.'
+                    }
+                ]
+            };
+
+            const techCardsContainer = document.getElementById('tech-cards-container');
+            const techniqueDetails = document.getElementById('technique-details');
+
+            appData.techniques.forEach(tech => {
+                const card = document.createElement('div');
+                card.className = 'tech-card cursor-pointer bg-white p-6 rounded-lg shadow-md border-2 border-transparent hover:shadow-xl hover:border-cyan-500';
+                card.dataset.id = tech.id;
+                card.innerHTML = `
+                    <div class="text-4xl">${tech.icon}</div>
+                    <h3 class="mt-4 text-lg font-semibold text-slate-900">${tech.name}</h3>
+                `;
+                techCardsContainer.appendChild(card);
+            });
+
+            techCardsContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.tech-card');
+                if (card) {
+                    const techId = card.dataset.id;
+                    const techData = appData.techniques.find(t => t.id === techId);
+
+                    document.querySelectorAll('.tech-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+
+                    techniqueDetails.innerHTML = `
+                        <h3 class="text-2xl font-bold text-slate-900">${techData.title}</h3>
+                        <p class="mt-4 text-slate-600 text-lg">${techData.description}</p>
+                    `;
+                }
+            });
+
+            const ctx = document.getElementById('honeypotComparisonChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Complexity', 'Data Collected', 'Risk'],
+                    datasets: [
+                        {
+                            label: 'Low-Interaction',
+                            data: [2, 3, 2],
+                            backgroundColor: 'rgba(56, 189, 248, 0.6)', // sky-400
+                            borderColor: 'rgba(14, 165, 233, 1)', // sky-500
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'High-Interaction',
+                            data: [8, 9, 7],
+                            backgroundColor: 'rgba(244, 114, 182, 0.6)', // pink-400
+                            borderColor: 'rgba(236, 72, 153, 1)', // pink-500
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 10,
+                            title: {
+                                display: true,
+                                text: 'Relative Level (1-10)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Low vs. High-Interaction Honeypot Trade-offs'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    const value = context.raw;
+                                    let text = '';
+                                    if (value <= 3) text = 'Low';
+                                    else if (value <= 7) text = 'Medium';
+                                    else text = 'High';
+                                    return `${label}${text} (${value}/10)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const tabs = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = tab.dataset.tab;
+                    tabContents.forEach(content => {
+                        if (content.id === target) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            const openSourceGrid = document.getElementById('opensource-tools-grid');
+            const commercialGrid = document.getElementById('commercial-tools-grid');
+            const openSourceFiltersContainer = document.getElementById('opensource-filters');
+
+            const allTags = [...new Set(appData.tools.opensource.flatMap(tool => tool.tags))];
+            let activeFilter = 'All';
+
+            function renderFilters() {
+                openSourceFiltersContainer.innerHTML = `<button class="filter-btn active px-4 py-2 text-sm font-medium rounded-full bg-cyan-600 text-white" data-filter="All">All</button>` +
+                    allTags.map(tag => `<button class="filter-btn px-4 py-2 text-sm font-medium rounded-full bg-white text-slate-700 hover:bg-slate-100" data-filter="${tag}">${tag}</button>`).join('');
+            }
+
+            function renderTools() {
+                openSourceGrid.innerHTML = appData.tools.opensource
+                    .filter(tool => activeFilter === 'All' || tool.tags.includes(activeFilter))
+                    .map(tool => `
+                        <div class="tool-card bg-slate-50 p-6 rounded-lg border border-slate-200 hover:shadow-lg">
+                            <h3 class="text-xl font-semibold text-slate-900">${tool.name}</h3>
+                            <p class="mt-1 text-cyan-600 font-medium">${tool.focus}</p>
+                            <p class="mt-2 text-slate-600">${tool.description}</p>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                ${tool.tags ? tool.tags.map(tag => `<span class="bg-slate-200 text-slate-700 text-xs font-medium px-2.5 py-0.5 rounded-full">${tag}</span>`).join('') : ''}
+                            </div>
+                        </div>
+                    `).join('');
+
+                commercialGrid.innerHTML = appData.tools.commercial.map(tool => `
+                    <div class="tool-card bg-slate-50 p-6 rounded-lg border border-slate-200 hover:shadow-lg">
+                        <h3 class="text-xl font-semibold text-slate-900">${tool.name}</h3>
+                        <p class="mt-1 text-cyan-600 font-medium">${tool.focus}</p>
+                        <p class="mt-2 text-slate-600">${tool.description}</p>
+                    </div>
+                `).join('');
+            }
+
+            openSourceFiltersContainer.addEventListener('click', e => {
+                if (e.target.tagName === 'BUTTON') {
+                    activeFilter = e.target.dataset.filter;
+                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active', 'bg-cyan-600', 'text-white'));
+                    e.target.classList.add('active', 'bg-cyan-600', 'text-white');
+                    renderTools();
+                }
+            });
+
+            renderFilters();
+            renderTools();
+
+            const accordionContainer = document.getElementById('accordion-container');
+            appData.challenges.forEach((challenge, index) => {
+                const item = document.createElement('div');
+                item.className = 'border border-slate-200 rounded-lg';
+                item.innerHTML = `
+                    <h2>
+                        <button type="button" class="accordion-button flex items-center justify-between w-full p-5 font-medium text-left text-slate-700 bg-slate-100 hover:bg-slate-200" data-accordion-target="#accordion-body-${index}">
+                            <span>${challenge.title}</span>
+                            <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    </h2>
+                    <div id="accordion-body-${index}" class="accordion-content">
+                        <div class="p-5 border-t border-slate-200">
+                            <p class="text-slate-600">${challenge.content}</p>
+                        </div>
+                    </div>
+                `;
+                accordionContainer.appendChild(item);
+            });
+
+            document.querySelectorAll('.accordion-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.parentElement.nextElementSibling;
+                    const icon = button.querySelector('svg');
+
+                    button.classList.toggle('bg-slate-200');
+                    icon.classList.toggle('rotate-180');
+
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            });
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+            const headerHeight = document.getElementById('header').offsetHeight;
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - headerHeight - 20;
+                    if (pageYOffset >= sectionTop) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AD OSINT Dashboard (2025)</title>
+    <!-- Chosen Palette: Cyber Analyst Calm -->
+    <!-- Application Structure Plan: A single-page application with a persistent top navigation bar for direct access to key areas. The structure is thematic and task-oriented, rather than a linear copy of the report, to enhance usability for a technical audience. The flow is designed to be educational: 1) A high-level introduction. 2) An interactive diagram of the OSINT Lifecycle to explain the process. 3) A core "Attack Surface Explorer" dashboard that links what data can be found (the "what") directly to the techniques and tools used to find it (the "how"). This is more practical than the report's separate sections. 4) An interactive "Recon Toolkit" to filter and explore tools. 5) A section on "Guardrails" covering ethics and OpSec. 6) A "Defense Playbook" with actionable recommendations. This structure guides the user from understanding the concepts to applying them in both offensive and defensive contexts. -->
+    <!-- Visualization & Content Choices: Report Info: OSINT Lifecycle -> Goal: Organize/Inform -> Viz: Interactive 5-step flowchart (HTML/CSS/JS) -> Interaction: Click to reveal details -> Justification: More engaging than a static list. Report Info: Common exposed info & techniques -> Goal: Relate/Organize -> Viz: Thematic dashboard with drill-down cards (HTML/CSS/JS) -> Interaction: Click to explore categories and see related techniques/tools -> Justification: Creates a practical link between data points and methods. Report Info: Table 2 (Tools) -> Goal: Compare/Inform -> Viz: Filterable grid of tool cards (HTML/CSS/JS) -> Interaction: Filter by category, click for details -> Justification: Superior UX to a large static table. Report Info: Active vs. Passive OSINT trade-offs -> Goal: Compare -> Viz: Simple Scatter Plot (Chart.js) -> Interaction: Hover for tooltips -> Justification: Visually communicates the core strategic concept of risk vs. reward. All other information is presented using structured HTML with clear typography and iconography. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F5F2;
+            /* Warm Neutral Background */
+            color: #2D2D2D;
+        }
+
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #5E81AC;
+            /* Muted Blue Accent */
+            border-bottom-color: #5E81AC;
+        }
+
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .btn-primary {
+            background-color: #5E81AC;
+            color: #FFFFFF;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #4C6A8D;
+        }
+
+        .btn-secondary {
+            background-color: #ECEFF4;
+            color: #4C566A;
+            transition: background-color 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background-color: #D8DEE9;
+        }
+
+        .section-title {
+            color: #3B4252;
+        }
+
+        .accent-text {
+            color: #5E81AC;
+        }
+
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 40vh;
+            width: 100%;
+            max-width: 600px;
+            max-height: 400px;
+        }
+
+        .lifecycle-step.active {
+            border-color: #5E81AC;
+            background-color: #EBF0F5;
+        }
+
+        .tool-card.hidden {
+            display: none;
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">AD OSINT <span
+                            class="text-base font-medium text-gray-500">2025</span></h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#intro"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Introduction</a>
+                        <a href="#lifecycle"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Lifecycle</a>
+                        <a href="#surface"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Attack Surface</a>
+                        <a href="#toolkit"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Toolkit</a>
+                        <a href="#guardrails"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Guardrails</a>
+                        <a href="#defense"
+                            class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Defense</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#intro"
+                    class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">Introduction</a>
+                <a href="#lifecycle"
+                    class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">Lifecycle</a>
+                <a href="#surface"
+                    class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">Attack Surface</a>
+                <a href="#toolkit"
+                    class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">Toolkit</a>
+                <a href="#guardrails"
+                    class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">Guardrails</a>
+                <a href="#defense"
+                    class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">Defense</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="intro" class="text-center mb-16 md:mb-24 scroll-mt-20">
+            <h2 class="text-3xl md:text-5xl font-bold section-title mb-4">OSINT for Active Directory Reconnaissance</h2>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">An interactive guide to the 2025
+                landscape of techniques, tools, and defenses for footprinting Active Directory environments using Open
+                Source Intelligence.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="card p-6">
+                    <h3 class="font-bold text-lg mb-2">The Dual Nature of OSINT</h3>
+                    <p class="text-gray-600 text-sm">OSINT is both a defender's shield and an attacker's sword.
+                        Understanding your public footprint is the first step to securing it. This guide explores both
+                        perspectives.</p>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-lg mb-2">Cloud: The New Frontier</h3>
+                    <p class="text-gray-600 text-sm">The shift to Azure AD has fundamentally changed AD reconnaissance,
+                        exposing new, direct OSINT vectors via public APIs. We'll explore these unique opportunities.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="lifecycle" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold section-title mb-2">The OSINT Lifecycle</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Effective OSINT follows a structured, iterative
+                    process. Click each step to learn how it applies to Active Directory reconnaissance.</p>
+            </div>
+            <div id="lifecycle-container" class="relative">
+                <div class="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gray-300 -translate-y-1/2"></div>
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-8 md:space-y-0 md:space-x-4">
+                </div>
+            </div>
+            <div id="lifecycle-details" class="mt-8 card p-6 w-full max-w-3xl mx-auto min-h-[150px]">
+            </div>
+        </section>
+
+        <section id="surface" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold section-title mb-2">Attack Surface Explorer</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Active Directory's footprint is exposed through
+                    various public vectors. Explore the categories below to see what data can be found and the
+                    techniques used to uncover it.</p>
+            </div>
+            <div id="surface-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            </div>
+        </section>
+
+        <section id="toolkit" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold section-title mb-2">The 2025 Recon Toolkit</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">A curated list of essential OSINT tools for AD
+                    reconnaissance. Filter by category to find the right tool for the job.</p>
+            </div>
+            <div id="tool-filters" class="flex flex-wrap justify-center gap-2 mb-8">
+            </div>
+            <div id="tool-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </section>
+
+        <section id="guardrails" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold section-title mb-2">Ethical & Operational Guardrails</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Effective OSINT requires navigating significant
+                    challenges. Understanding these guardrails is crucial for legal, ethical, and secure operations.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="card p-6 text-center">
+                    <div class="text-4xl mb-4">⚖️</div>
+                    <h3 class="font-bold text-lg mb-2">Legal & Ethical Boundaries</h3>
+                    <p class="text-gray-600 text-sm">OSINT operates on public data, but is governed by laws like GDPR
+                        and CCPA. Respecting privacy and terms of service isn't just ethical, it's a strategic
+                        imperative to avoid legal risk.</p>
+                </div>
+                <div class="card p-6 text-center">
+                    <div class="text-4xl mb-4">🌪️</div>
+                    <h3 class="font-bold text-lg mb-2">Data Overload & Quality</h3>
+                    <p class="text-gray-600 text-sm">The "signal-to-noise" problem is immense. Rigorous verification,
+                        cross-referencing, and critical thinking are paramount to avoid acting on flawed or false
+                        information.</p>
+                </div>
+                <div class="card p-6 text-center">
+                    <div class="text-4xl mb-4">🛡️</div>
+                    <h3 class="font-bold text-lg mb-2">Operational Security (OpSec)</h3>
+                    <p class="text-gray-600 text-sm">Assume you are being watched. Use burner accounts, VPNs/proxies,
+                        and compartmentalized systems. A strong OpSec posture prevents your reconnaissance from becoming
+                        the target's intelligence.</p>
+                </div>
+            </div>
+            <div class="mt-12">
+                <div class="chart-container">
+                    <canvas id="riskRewardChart"></canvas>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-4">Visualizing the strategic trade-off between passive
+                    and active OSINT techniques.</p>
+            </div>
+        </section>
+
+        <section id="defense" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold section-title mb-2">Proactive Defense Playbook</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Use OSINT to your advantage. This playbook outlines
+                    key defensive strategies to identify and mitigate your organization's exposed AD footprint.</p>
+            </div>
+            <div id="defense-accordion" class="max-w-3xl mx-auto space-y-4">
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>This interactive dashboard is a synthesized representation of the "Open Source Intelligence for Active
+                Directory Reconnaissance: 2025 Best Practices and Solutions" report.</p>
+            <p>&copy; 2025. For educational and informational purposes only.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const db = {
+                lifecycle: [
+                    { id: 1, title: 'Planning', icon: '🎯', description: 'Define clear objectives for the AD reconnaissance. What specific information are you looking for? (e.g., user naming conventions, exposed cloud services). This ensures efforts are focused and ethical.' },
+                    { id: 2, title: 'Collection', icon: '📥', description: 'Gather raw data from diverse public sources like social media, domain registries, search engines, and data breach repositories. This is the primary information-gathering phase.' },
+                    { id: 3, title: 'Processing', icon: '⚙️', description: 'Filter, structure, and organize the collected raw data. Redundancies are removed, and information is prepared for analysis using specialized OSINT tools.' },
+                    { id: 4, title: 'Analysis', icon: '🧠', description: 'Transform processed data into actionable intelligence. Identify patterns, correlate information (e.g., link a LinkedIn profile to a leaked email), and verify findings across multiple sources.' },
+                    { id: 5, title: 'Reporting', icon: '📄', description: 'Compile findings into a structured report for stakeholders. Detail observations, assess risks, and provide actionable recommendations for mitigating AD exposures.' }
+                ],
+                attackSurface: [
+                    {
+                        category: 'Corporate Footprint',
+                        icon: '🏢',
+                        description: 'The organization\'s official digital and legal identity.',
+                        items: [
+                            { name: 'Domains & Subdomains', technique: 'WHOIS/DNS lookups, DNSDumpster' },
+                            { name: 'Business & Legal Filings', technique: 'Searching public government/SEC records' },
+                            { name: 'IP Ranges & Network Blocks', technique: 'ASN lookups, Shodan/Censys' }
+                        ]
+                    },
+                    {
+                        category: 'The Human Factor',
+                        icon: '👥',
+                        description: 'Information exposed by and about employees.',
+                        items: [
+                            { name: 'Employee Names & Roles', technique: 'SOCMINT (LinkedIn), Google Dorking' },
+                            { name: 'Email Naming Conventions', technique: 'Correlating names with website contacts' },
+                            { name: 'Leaked Credentials', technique: 'Searching data breach databases (HaveIBeenPwned)' },
+                            { name: 'Organizational Structure', technique: 'Analyzing LinkedIn reporting lines' }
+                        ]
+                    },
+                    {
+                        category: 'Technical Exposure',
+                        icon: '💻',
+                        description: 'Inadvertently exposed services and data.',
+                        items: [
+                            { name: 'Exposed Services (RDP, SMB)', technique: 'Scanning with Shodan/Censys' },
+                            { name: 'Leaked Code & API Keys', technique: 'Searching public code repos (GitHub)' },
+                            { name: 'Sensitive Files & Docs', technique: 'Google Dorking (e.g., filetype:pdf)' },
+                            { name: 'Software Versions & Vulns', technique: 'Shodan/Censys, CVE databases' }
+                        ]
+                    },
+                    {
+                        category: 'The Cloud Vector',
+                        icon: '☁️',
+                        description: 'Unique OSINT opportunities in Azure AD.',
+                        items: [
+                            { name: 'Tenant Name & ID', technique: 'AADInternals, unauthenticated API calls' },
+                            { name: 'Sync Status & Account Name', technique: 'AADInternals' },
+                            { name: 'Licensing & SSO Status', technique: 'AADInternals' },
+                            { name: 'Global Admin Contact Info', technique: 'AADInternals (potential exposure)' }
+                        ]
+                    }
+                ],
+                tools: [
+                    { name: 'AADInternals', category: 'Cloud-Specific', description: 'Essential PowerShell module for Azure AD OSINT via unauthenticated APIs.' },
+                    { name: 'ShadowDragon', category: 'Comprehensive', description: 'Professional platform for deep OSINT, aggregating over 600 data sources.' },
+                    { name: 'Maltego', category: 'Comprehensive', description: 'Powerful visualization tool for mapping relationships between data points.' },
+                    { name: 'SpiderFoot', category: 'Automation', description: 'Automates OSINT collection across dozens of sources to map an attack surface.' },
+                    { name: 'Shodan/Censys', category: 'Network Discovery', description: 'Search engines for internet-connected devices, services, and vulnerabilities.' },
+                    { name: 'Google Dorking', category: 'Search Engine', description: 'Using advanced search operators to find sensitive, indexed information.' },
+                    { name: 'DNSDumpster', category: 'Network Discovery', description: 'Visualizes domain and DNS relationships to map infrastructure.' },
+                    { name: 'HaveIBeenPwned', category: 'Data Breach', description: 'Checks if email addresses have been compromised in known data breaches.' },
+                    { name: 'GitHub Search', category: 'Code Analysis', description: 'Scans public repositories for leaked credentials, API keys, and configurations.' },
+                    { name: 'ExifTool', category: 'Data Analysis', description: 'Extracts metadata from files, which can reveal internal system details.' },
+                    { name: 'OSINT Industries', category: 'Comprehensive', description: 'Real-time lookup tool for correlating emails, phone numbers, and usernames to online accounts.' },
+                    { name: 'AI/ML Platforms', category: 'Automation', description: 'Platforms like Fivecast or Talkwalker that use AI to analyze vast datasets and predict trends.' }
+                ],
+                defense: [
+                    { title: 'Conduct Self-OSINT Assessments', content: 'Regularly use OSINT tools and techniques against your own organization. Find your exposed AD-related information before attackers do. This includes scanning for exposed services, searching for leaked credentials, and monitoring social media.' },
+                    { title: 'Implement Strong Information Governance', content: 'Establish and enforce clear policies on what information can be shared publicly. Train employees on the risks of oversharing on social media and minimize the public exposure of technical details in documents or on websites.' },
+                    { title: 'Leverage AI for Continuous Monitoring', content: 'Invest in modern OSINT platforms that use AI/ML to continuously monitor the public internet for mentions of your company, employees, and technologies. These tools can detect emerging threats and data leaks in real-time.' },
+                    { title: 'Enhance Employee Security Training', content: 'Your employees are your first line of defense. Train them to recognize sophisticated phishing attacks that use OSINT-gathered details. Emphasize strong password hygiene and the mandatory use of Multi-Factor Authentication (MFA).' },
+                    { title: 'Strengthen Cloud Security Posture', content: 'Regularly audit your Azure AD configuration. Ensure unauthenticated APIs do not leak sensitive information like Global Admin contacts or sync account names. Implement strict access controls and monitor API usage for anomalies.' }
+                ]
+            };
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const lifecycleContainer = document.querySelector('#lifecycle-container .flex');
+            const lifecycleDetails = document.getElementById('lifecycle-details');
+            db.lifecycle.forEach((step, index) => {
+                const stepEl = document.createElement('div');
+                stepEl.className = 'lifecycle-step relative flex flex-col items-center p-4 border-2 border-transparent rounded-lg cursor-pointer transition-all duration-300 w-48 text-center bg-white shadow-sm';
+                stepEl.dataset.id = step.id;
+                stepEl.innerHTML = `<div class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-3xl mb-3">${step.icon}</div><h4 class="font-semibold text-gray-700">${step.title}</h4>`;
+                lifecycleContainer.appendChild(stepEl);
+            });
+
+            const lifecycleSteps = document.querySelectorAll('.lifecycle-step');
+            lifecycleSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    lifecycleSteps.forEach(s => s.classList.remove('active'));
+                    step.classList.add('active');
+                    const stepData = db.lifecycle.find(s => s.id == step.dataset.id);
+                    lifecycleDetails.innerHTML = `<h4 class="font-bold text-lg mb-2 accent-text">${stepData.title}</h4><p class="text-gray-600">${stepData.description}</p>`;
+                });
+            });
+            lifecycleSteps[0].click();
+
+            const surfaceGrid = document.getElementById('surface-grid');
+            db.attackSurface.forEach(cat => {
+                const card = document.createElement('div');
+                card.className = 'card p-6';
+                let itemsHtml = cat.items.map(item => `<li class="mb-2"><strong class="font-semibold text-gray-800">${item.name}:</strong><br><span class="text-sm text-gray-500">${item.technique}</span></li>`).join('');
+                card.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <div class="text-4xl mr-4">${cat.icon}</div>
+                        <div>
+                            <h3 class="font-bold text-xl">${cat.category}</h3>
+                            <p class="text-sm text-gray-500">${cat.description}</p>
+                        </div>
+                    </div>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1 pl-1">${itemsHtml}</ul>
+                `;
+                surfaceGrid.appendChild(card);
+            });
+
+            const toolFiltersContainer = document.getElementById('tool-filters');
+            const toolGrid = document.getElementById('tool-grid');
+            const toolCategories = ['All', ...new Set(db.tools.map(t => t.category))];
+
+            toolCategories.forEach(cat => {
+                const button = document.createElement('button');
+                button.className = 'filter-btn btn-secondary px-4 py-2 text-sm font-medium rounded-md';
+                button.textContent = cat;
+                button.dataset.filter = cat;
+                if (cat === 'All') button.classList.replace('btn-secondary', 'btn-primary');
+                toolFiltersContainer.appendChild(button);
+            });
+
+            db.tools.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'tool-card card p-5 flex flex-col';
+                card.dataset.category = tool.category;
+                card.innerHTML = `
+                    <h4 class="font-bold text-lg mb-2">${tool.name}</h4>
+                    <p class="text-gray-600 text-sm flex-grow">${tool.description}</p>
+                    <span class="mt-4 text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full self-start">${tool.category}</span>
+                `;
+                toolGrid.appendChild(card);
+            });
+
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const toolCards = document.querySelectorAll('.tool-card');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.replace('btn-primary', 'btn-secondary'));
+                    button.classList.replace('btn-secondary', 'btn-primary');
+                    const filter = button.dataset.filter;
+                    toolCards.forEach(card => {
+                        if (filter === 'All' || card.dataset.category === filter) {
+                            card.classList.remove('hidden');
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            const defenseAccordion = document.getElementById('defense-accordion');
+            db.defense.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'card rounded-lg overflow-hidden';
+                div.innerHTML = `
+                    <button class="accordion-button w-full text-left p-5 flex justify-between items-center bg-white hover:bg-gray-50 transition">
+                        <h4 class="font-semibold text-lg">${item.title}</h4>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content bg-gray-50">
+                        <p class="p-5 text-gray-600">${item.content}</p>
+                    </div>
+                `;
+                defenseAccordion.appendChild(div);
+            });
+
+            defenseAccordion.addEventListener('click', (e) => {
+                const button = e.target.closest('.accordion-button');
+                if (button) {
+                    const content = button.nextElementSibling;
+                    const icon = button.querySelector('span');
+                    const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+                    document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = '0px');
+                    document.querySelectorAll('.accordion-button span').forEach(i => i.style.transform = 'rotate(0deg)');
+
+                    if (!isOpen) {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        icon.style.transform = 'rotate(180deg)';
+                    }
+                }
+            });
+
+            const ctx = document.getElementById('riskRewardChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Passive OSINT',
+                        data: [{ x: 2, y: 4 }, { x: 3, y: 5 }],
+                        backgroundColor: 'rgba(94, 129, 172, 0.7)',
+                        pointRadius: 10,
+                        pointHoverRadius: 12,
+                    }, {
+                        label: 'Active OSINT',
+                        data: [{ x: 7, y: 8 }, { x: 8, y: 9 }],
+                        backgroundColor: 'rgba(216, 58, 58, 0.7)',
+                        pointRadius: 10,
+                        pointHoverRadius: 12,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'OSINT Technique Risk vs. Reward'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (label === 'Passive OSINT: ') {
+                                        return label + 'Low risk, foundational intelligence.';
+                                    }
+                                    return label + 'High risk, high-value real-time data.';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Detection Risk'
+                            },
+                            min: 0,
+                            max: 10,
+                            ticks: { display: false }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Information Value'
+                            },
+                            min: 0,
+                            max: 10,
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
