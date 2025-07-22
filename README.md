@@ -1,3 +1,5 @@
+![Active Directory Penetration Testing Guide](./assets/ac.png)
+
 # 🔒 Sec-Active-Directory
 **Active Directory Penetration Testing Guide**
 
