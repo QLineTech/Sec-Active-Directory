@@ -3,7 +3,7 @@ $domain = Read-Host "Enter the domain name (e.g., example.com)"
 $dc = Read-Host "Enter the DC (e.g., com)"
 
 # Step 1: Check ACL for the specified domain and DC
-$acl = Get-Acl -Path "AD:\DC=$domain,DC=$dc" | Format-List -Property Access | Out-String
+$acl = Get-Acl -Path "AD:DC=$domain,DC=$dc" | Format-List -Property Access | Out-String
 
 if ($acl -match "Everyone\s+Allow") {
     Write-Host "WARNING: Default permissions allowed to Everyone."
